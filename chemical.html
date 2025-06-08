@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Interactive Chemistry Lab</title>
+    <style>
+        /* Basic Reset & Page Styling */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #e6e6fa; /* Lavender */
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: #483d8b; /* Dark Slate Blue */
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .lab-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            gap: 20px;
+        }
+
+        .top-row {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 1200px;
+            gap: 20px;
+        }
+
+        /* Chemicals Inventory Styling */
+        .chemicals-shelf {
+            background-color: #dcdcdc; /* Gainsboro */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            width: 300px;
+            text-align: center;
+        }
+
+        .chemicals-shelf h2 {
+            margin-top: 0;
+            color: #2f4f4f; /* Dark Slate Gray */
+        }
+
+        .chemical {
+            padding: 12px 18px;
+            margin: 12px 0;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: grab;
+            text-align: center;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .chemical:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+        }
+
+        /* Specific Chemical Colors */
+        #chem-acid { background-color: #ff4757; /* Light Red */ }
+        #chem-base { background-color: #3742fa; /* Royal Blue */ }
+        #chem-indicator { background-color: #ffc312; /* Yellow */ }
+        #chem-metal { background-color: #7f8c8d; /* Asbestos */ }
+        #chem-water { background-color: #1e90ff; /* Dodger Blue */ }
+        #chem-salt { background-color: #f5f6fa; color: #333; border: 1px solid #dcdde1; } /* Light Grey */
+        #chem-oxidizer { background-color: #e84393; /* Bright Pink */ }
+        #chem-precipitate-former { background-color: #a4b0be; /* Light Slate Gray */ }
+        #chem-glow-agent { background-color: #7bed9f; /* Light Green */ }
+        #chem-catalyst { background-color: #eccc68; /* Light Orange/Gold */ color: #333; border: 1px solid #B15B00;}
+
+
+        /* Beaker Styling */
+        .beaker-zone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .beaker-zone h2 {
+            color: #2f4f4f;
+            margin-top: 0;
+        }
+
+        .beaker {
+            width: 180px; /* Slightly wider */
+            height: 250px; /* Slightly taller */
+            border: 6px solid #6c7a89; /* Greyish Blue */
+            border-top: none; /* Open top */
+            border-radius: 0 0 30px 30px; /* More rounded bottom */
+            position: relative;
+            background-color: rgba(255,255,255,0.7); /* Slightly transparent white */
+            box-shadow: inset 0 -15px 20px rgba(0,0,0,0.08);
+            overflow: hidden; /* Important for containing the liquid and effects */
+        }
+
+        .beaker-liquid {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0; /* Starts empty */
+            background-color: #82ccdd; /* Default water color */
+            transition: height 0.5s ease, background-color 0.5s ease;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end; /* Effects originate from bottom better */
+        }
+        
+        /* Liquid Levels */
+        .level-0 { height: 0%; }
+        .level-1 { height: 15%; }
+        .level-2 { height: 30%; }
+        .level-3 { height: 45%; }
+        .level-4 { height: 60%; }
+        .level-5 { height: 75%; }
+        .level-6 { height: 90%; }
+        .level-max { height: 100%; }
+
+
+        /* Reaction Effects */
+        .effect-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%; /* Cover the liquid area */
+            pointer-events: none; /* Allow clicks through to beaker */
+        }
+
+        .fizz-bubble {
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: rise 1.5s infinite ease-in;
+            opacity: 0;
+        }
+
+        @keyframes rise {
+            0% { transform: translateY(0) scale(0.5); opacity: 1; }
+            50% { opacity: 0.9; }
+            100% { transform: translateY(-220px) scale(1); opacity: 0; } /* Adjust based on beaker height */
+        }
+
+        .smoke-particle {
+            position: absolute;
+            top: 10%; /* Start near top of liquid if liquid is high */
+            left: 50%;
+            width: 25px;
+            height: 25px;
+            background-color: rgba(100, 100, 100, 0.4);
+            border-radius: 50%;
+            animation: smoke-rise 3s infinite ease-out;
+            opacity: 0;
+        }
+        
+        @keyframes smoke-rise {
+            0% { transform: translateY(0) translateX(-50%) scale(0.5); opacity: 0; }
+            20% { opacity: 0.5; }
+            100% { transform: translateY(-150px) translateX(-50%) scale(2); opacity: 0; }
+        }
+
+        .precipitate-layer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%; /* Starts with no precipitate */
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(100, 100, 100, 0.2),
+                rgba(100, 100, 100, 0.2) 5px,
+                rgba(120, 120, 120, 0.25) 5px,
+                rgba(120, 120, 120, 0.25) 10px
+            );
+            opacity: 0;
+            transition: height 1s ease, opacity 1s ease;
+        }
+        .precipitate-layer.active {
+            height: 25%; /* Or adjust based on amount */
+            opacity: 1;
+        }
+
+        .glow-effect {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 0 0 25px 25px; /* Match beaker bottom */
+            animation: subtle-glow 2s infinite alternate;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .glow-effect.active {
+            opacity: 0.7;
+        }
+
+        @keyframes subtle-glow {
+            from { box-shadow: 0 0 15px 5px rgba(123, 237, 159, 0.5), inset 0 0 10px rgba(123, 237, 159, 0.3); }
+            to   { box-shadow: 0 0 30px 10px rgba(123, 237, 159, 0.7), inset 0 0 15px rgba(123, 237, 159, 0.5); }
+        }
+        .glow-effect.blue-glow.active {
+             animation: subtle-blue-glow 2s infinite alternate;
+        }
+        @keyframes subtle-blue-glow {
+            from { box-shadow: 0 0 15px 5px rgba(55, 66, 250, 0.5), inset 0 0 10px rgba(55, 66, 250, 0.3); }
+            to   { box-shadow: 0 0 30px 10px rgba(55, 66, 250, 0.7), inset 0 0 15px rgba(55, 66, 250, 0.5); }
+        }
+
+
+        /* Results Area Styling */
+        .results-area {
+            background-color: #f5f6fa;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            width: 100%;
+            max-width: 600px; /* Wider results area */
+            min-height: 180px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .results-area h2 {
+            margin-top: 0;
+            color: #2f4f4f;
+        }
+
+        #reaction-info {
+            font-size: 1.15em;
+            color: #483d8b;
+            margin-top: 15px;
+            line-height: 1.6;
+        }
+        
+        #clear-beaker-button {
+            margin-top: 25px;
+            padding: 12px 25px;
+            background-color: #ff7f50; /* Coral */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.05em;
+            transition: background-color 0.3s ease;
+        }
+
+        #clear-beaker-button:hover {
+            background-color: #ff6347; /* Tomato */
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Advanced Chemistry Simulation Lab!</h1>
+
+    <div class="lab-container">
+        <div class="top-row">
+            <div class="chemicals-shelf">
+                <h2>Chemicals Locker</h2>
+                <div class="chemical" id="chem-acid" draggable="true" data-chemical="acid">Corrosive Acid</div>
+                <div class="chemical" id="chem-base" draggable="true" data-chemical="base">Strong Base</div>
+                <div class="chemical" id="chem-indicator" draggable="true" data-chemical="indicator">Universal Indicator</div>
+                <div class="chemical" id="chem-metal" draggable="true" data-chemical="metal">Reactive Metal Flakes</div>
+                <div class="chemical" id="chem-water" draggable="true" data-chemical="water">Distilled Water</div>
+                <div class="chemical" id="chem-salt" draggable="true" data-chemical="salt">Plain Salt</div>
+                <div class="chemical" id="chem-oxidizer" draggable="true" data-chemical="oxidizer">Potent Oxidizer</div>
+                <div class="chemical" id="chem-precipitate-former" draggable="true" data-chemical="precipitateA">Solution A (Precipitate)</div>
+                <div class="chemical" id="chem-glow-agent" draggable="true" data-chemical="glowAgent">Glowing Agent</div>
+                <div class="chemical" id="chem-catalyst" draggable="true" data-chemical="catalyst">Reaction Catalyst</div>
+            </div>
+
+            <div class="beaker-zone">
+                <h2>Reaction Beaker</h2>
+                <div class="beaker" id="main-beaker">
+                    <div class="beaker-liquid" id="beaker-content">
+                        <div class="effect-container" id="effect-container">
+                            <div class="precipitate-layer" id="precipitate-layer"></div>
+                             <div class="glow-effect" id="glow-layer"></div>
+                        </div>
+                    </div>
+                </div>
+                <button id="clear-beaker-button">Empty and Clean Beaker</button>
+            </div>
+        </div>
+
+        <div class="results-area">
+            <h2>Experiment Analysis</h2>
+            <div id="reaction-info">Drag chemicals into the beaker. Add multiple to see complex reactions!</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const chemicalsElements = document.querySelectorAll('.chemical');
+            const beaker = document.getElementById('main-beaker');
+            const beakerContent = document.getElementById('beaker-content');
+            const effectContainer = document.getElementById('effect-container');
+            const precipitateLayer = document.getElementById('precipitate-layer');
+            const glowLayer = document.getElementById('glow-layer');
+            const reactionInfo = document.getElementById('reaction-info');
+            const clearBeakerButton = document.getElementById('clear-beaker-button');
+
+            let draggedChemicalId = null;
+            let chemicalsInBeaker = []; // Stores IDs of chemicals in the beaker
+            let currentLiquidLevel = 0; // From 0 to 6 (or MAX_LIQUID_LEVELS)
+            const MAX_LIQUID_LEVELS = 6; // Max fill steps
+
+            // --- Chemical Definitions ---
+            const chemicalData = {
+                'acid': { name: 'Corrosive Acid', color: '#ff4757', type: 'liquid' },
+                'base': { name: 'Strong Base', color: '#3742fa', type: 'liquid' },
+                'indicator': { name: 'Universal Indicator', color: '#ffc312', type: 'liquid' },
+                'metal': { name: 'Reactive Metal Flakes', color: '#7f8c8d', type: 'solid' },
+                'water': { name: 'Distilled Water', color: '#1e90ff', type: 'liquid' },
+                'salt': { name: 'Plain Salt', color: '#f5f6fa', type: 'solid',textColor: '#333' },
+                'oxidizer': { name: 'Potent Oxidizer', color: '#e84393', type: 'liquid' },
+                'precipitateA': { name: 'Solution A', color: '#a4b0be', type: 'liquid' }, // This will react with another (not yet added) to form precipitate
+                'glowAgent': { name: 'Glowing Agent', color: '#7bed9f', type: 'powder' },
+                'catalyst': { name: 'Reaction Catalyst', color: '#eccc68', type: 'powder', textColor: '#333' }
+            };
+
+            // --- Reaction Rules ---
+            // Priority: Lower numbers are higher priority.
+            const reactionRules = [
+                {
+                    name: "Catalyzed Fiery Reaction",
+                    participants: ['acid', 'metal', 'oxidizer', 'catalyst'],
+                    priority: 1,
+                    result: { color: '#ff6b6b', message: "WOW! The catalyst ignited a FUMING, FIERY reaction between acid, metal, and oxidizer! It's extremely hot!", effect: 'intense_fizz_smoke' }
+                },
+                {
+                    name: "Glowing Acidic Metal Reaction",
+                    participants: ['acid', 'metal', 'glowAgent'],
+                    priority: 2,
+                    result: { color: '#f0932b', message: "The metal reacts vigorously in acid, and the solution now GLOWS eerily!", effect: 'strong_fizz_glow_green' }
+                },
+                {
+                    name: "Acid-Base Neutralization with Indicator",
+                    participants: ['acid', 'base', 'indicator'],
+                    priority: 3,
+                    result: { color: '#70a1ff', message: "Acid and Base neutralized! The indicator shows a neutral blue-ish green. It's warm.", effect: 'gentle_fizz' }
+                },
+                {
+                    name: "Oxidizer-Metal Reaction",
+                    participants: ['oxidizer', 'metal'],
+                    priority: 4,
+                    result: { color: '#ff7979', message: "The oxidizer corrodes the metal rapidly, releasing heat and fumes!", effect: 'smoke_gentle_fizz' }
+                },
+                {
+                    name: "Indicator with Acid",
+                    participants: ['acid', 'indicator'],
+                    priority: 5,
+                    result: { color: '#ee5253', message: "Indicator turns bright red in the strong acid!", effect: null }
+                },
+                {
+                    name: "Indicator with Base",
+                    participants: ['base', 'indicator'],
+                    priority: 5,
+                    result: { color: '#0000cd', message: "Indicator turns deep blue in the strong base!", effect: null }
+                },
+                {
+                    name: "Acid-Metal Reaction",
+                    participants: ['acid', 'metal'],
+                    priority: 6,
+                    result: { color: '#ff7f50', message: "The metal fizzes violently in the acid, producing gas!", effect: 'strong_fizz' }
+                },
+                 {
+                    name: "Precipitation Reaction",
+                    participants: ['precipitateA', 'base'], // Example: Solution A + Base
+                    priority: 7,
+                    result: { color: '#d1ccc0', message: "A cloudy white precipitate has formed and is settling!", effect: 'precipitate_white' }
+                },
+                {
+                    name: "Water and Glow Agent",
+                    participants: ['water', 'glowAgent'],
+                    priority: 8,
+                    result: { color: '#55efc4', message: "The agent dissolves, making the water glow gently green!", effect: 'glow_green' }
+                },
+                {
+                    name: "Base and Glow Agent",
+                    participants: ['base', 'glowAgent'],
+                    priority: 8,
+                    result: { color: '#30336b', message: "The agent dissolves in the base, creating a deep blue glow!", effect: 'glow_blue' }
+                },
+                {
+                    name: "Acid Dilution",
+                    participants: ['acid', 'water'],
+                    priority: 10,
+                    result: { color: '#ff6348', message: "Acid diluted in water. Still very acidic!", effect: null }
+                },
+                {
+                    name: "Base Dilution",
+                    participants: ['base', 'water'],
+                    priority: 10,
+                    result: { color: '#4a69bd', message: "Base diluted in water. Still very alkaline!", effect: null }
+                },
+                {
+                    name: "Salt Dissolves in Water",
+                    participants: ['salt', 'water'],
+                    priority: 10,
+                    result: { color: '#caeafd', message: "Salt dissolved, the water is a bit cloudy.", effect: null }
+                }
+                // Add more reactions: simple ones (2 participants) and complex ones (3+ participants)
+            ];
+            reactionRules.sort((a, b) => a.priority - b.priority); // Ensure they are sorted by priority
+
+
+            // --- Drag and Drop Functionality ---
+            chemicalsElements.forEach(chemicalEl => {
+                chemicalEl.addEventListener('dragstart', (e) => {
+                    draggedChemicalId = e.target.dataset.chemical;
+                    e.dataTransfer.setData('text/plain', draggedChemicalId);
+                    e.target.style.opacity = '0.5';
+                });
+
+                chemicalEl.addEventListener('dragend', (e) => {
+                    e.target.style.opacity = '1';
+                    draggedChemicalId = null;
+                });
+            });
+
+            beaker.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                beaker.style.borderColor = '#f0932b'; /* Orange highlight */
+                beaker.style.borderStyle = 'dashed';
+            });
+
+            beaker.addEventListener('dragleave', () => {
+                beaker.style.borderColor = '#6c7a89';
+                beaker.style.borderStyle = 'solid';
+            });
+
+            beaker.addEventListener('drop', (e) => {
+                e.preventDefault();
+                beaker.style.borderColor = '#6c7a89';
+                beaker.style.borderStyle = 'solid';
+                const chemicalId = draggedChemicalId || e.dataTransfer.getData('text/plain');
+
+                if (chemicalId) {
+                    addChemicalToBeaker(chemicalId);
+                }
+            });
+
+            // --- Beaker and Reaction Logic ---
+            function addChemicalToBeaker(chemicalId) {
+                const chemInfo = chemicalData[chemicalId];
+                if (!chemInfo) return;
+
+                if (currentLiquidLevel >= MAX_LIQUID_LEVELS && (chemInfo.type === 'liquid' || chemInfo.type === 'powder')) {
+                    reactionInfo.textContent = 'Beaker is too full to add more liquids or powders! Empty it first.';
+                    return;
+                }
+
+                chemicalsInBeaker.push(chemicalId);
+
+                // Update liquid level
+                if (chemInfo.type === 'liquid') {
+                    if (currentLiquidLevel < MAX_LIQUID_LEVELS) currentLiquidLevel++;
+                } else if (chemInfo.type === 'powder' || chemInfo.type === 'solid') { // Powders/solids take less space or only if liquid is present
+                    if (currentLiquidLevel === 0 && currentLiquidLevel < MAX_LIQUID_LEVELS) currentLiquidLevel = 1; // Add a base level if empty
+                    else if (currentLiquidLevel > 0 && currentLiquidLevel < MAX_LIQUID_LEVELS) currentLiquidLevel = Math.min(currentLiquidLevel + 0.5, MAX_LIQUID_LEVELS); // increment less for solids
+                }
+                
+                // Cap level at max visually
+                let displayLevel = Math.min(Math.ceil(currentLiquidLevel), MAX_LIQUID_LEVELS);
+                if (displayLevel === MAX_LIQUID_LEVELS && currentLiquidLevel >= MAX_LIQUID_LEVELS) {
+                     beakerContent.className = 'beaker-liquid level-max';
+                } else {
+                    beakerContent.className = `beaker-liquid level-${displayLevel}`;
+                }
+
+
+                evaluateReactions();
+            }
+
+            function evaluateReactions() {
+                clearAllEffects();
+                let reactionTriggered = false;
+
+                for (const rule of reactionRules) {
+                    const allParticipantsPresent = rule.participants.every(p => chemicalsInBeaker.includes(p));
+                    if (allParticipantsPresent) {
+                        applyReactionResult(rule.result);
+                        reactionTriggered = true;
+                        break; // Stop after the highest priority reaction is found
+                    }
+                }
+
+                if (!reactionTriggered) {
+                    // Default behavior if no specific reaction matched
+                    if (chemicalsInBeaker.length > 0) {
+                        const lastChemId = chemicalsInBeaker[chemicalsInBeaker.length - 1];
+                        const lastChemInfo = chemicalData[lastChemId];
+                        beakerContent.style.backgroundColor = lastChemInfo.color;
+                        let names = chemicalsInBeaker.map(id => chemicalData[id].name).join(', ');
+                        reactionInfo.textContent = `You've mixed: ${names}. No specific strong reaction observed with this combination. The solution takes on the color of ${lastChemInfo.name}.`;
+                    } else {
+                        beakerContent.style.backgroundColor = '#82ccdd'; // Default empty
+                        reactionInfo.textContent = 'Beaker is empty. Add some chemicals!';
+                    }
+                }
+            }
+
+            function applyReactionResult(result) {
+                beakerContent.style.backgroundColor = result.color;
+                reactionInfo.textContent = result.message;
+                if (result.effect) {
+                    triggerEffect(result.effect, result.color); // Pass color for glow customization
+                }
+            }
+            
+            function triggerEffect(effectType, effectColor) {
+                if (effectType.includes('fizz')) {
+                    const bubbleCount = effectType.includes('strong') || effectType.includes('intense') ? 15 : 8;
+                    for (let i = 0; i < bubbleCount; i++) {
+                        const bubble = document.createElement('div');
+                        bubble.classList.add('fizz-bubble');
+                        bubble.style.left = `${Math.random() * 90 + 5}%`;
+                        bubble.style.animationDelay = `${Math.random() * 0.5}s`;
+                        bubble.style.animationDuration = `${Math.random() * 1 + 0.8}s`;
+                        effectContainer.appendChild(bubble);
+                    }
+                }
+                if (effectType.includes('smoke')) {
+                    const smokeCount = effectType.includes('intense') ? 5 : 3;
+                     for (let i = 0; i < smokeCount; i++) {
+                        const smoke = document.createElement('div');
+                        smoke.classList.add('smoke-particle');
+                        smoke.style.left = `${Math.random() * 60 + 20}%`;
+                        smoke.style.animationDelay = `${Math.random() * 0.7 + i * 0.2}s`;
+                        effectContainer.appendChild(smoke);
+                    }
+                }
+                if (effectType.includes('precipitate')) {
+                    precipitateLayer.classList.add('active');
+                    if(effectType.includes('white')) {
+                        precipitateLayer.style.background = "repeating-linear-gradient(45deg, rgba(220, 220, 220, 0.6), rgba(220, 220, 220, 0.6) 5px, rgba(200, 200, 200, 0.65) 5px, rgba(200, 200, 200, 0.65) 10px)";
+                    }
+                }
+                if (effectType.includes('glow')) {
+                    glowLayer.className = 'glow-effect active'; // Reset then add active
+                    if (effectType.includes('green')) {
+                        glowLayer.style.animationName = 'subtle-glow'; // Default green glow
+                    } else if (effectType.includes('blue')) {
+                         glowLayer.classList.add('blue-glow'); // Specific class for blue glow CSS
+                    }
+                    // you can add more color checks for glow
+                }
+            }
+
+            function clearAllEffects() {
+                effectContainer.innerHTML = ''; // Clears bubbles and smoke
+                precipitateLayer.classList.remove('active');
+                glowLayer.classList.remove('active', 'blue-glow'); // Remove all glow related classes
+                glowLayer.style.animationName = 'subtle-glow'; // Reset to default if it was changed
+            }
+
+            clearBeakerButton.addEventListener('click', () => {
+                chemicalsInBeaker = [];
+                currentLiquidLevel = 0;
+                beakerContent.className = 'beaker-liquid level-0';
+                beakerContent.style.backgroundColor = '#82ccdd'; // Default empty color
+                reactionInfo.textContent = 'Beaker emptied and cleaned! Ready for new amazing experiments.';
+                clearAllEffects();
+            });
+
+            // Initialize beaker state visually
+            clearBeakerButton.click(); 
+        });
+    </script>
+</body>
+</html>
